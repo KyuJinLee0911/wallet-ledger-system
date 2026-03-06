@@ -5,7 +5,8 @@ import com.example.walletledger.domain.wallet.Wallet;
 import com.example.walletledger.service.dto.CreateWalletCommand;
 import com.example.walletledger.service.dto.MoneyCommand;
 import com.example.walletledger.service.dto.TransferCommand;
-import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 /**
  * 지갑 원장 핵심 유스케이스를 처리하는 서비스.
@@ -44,9 +45,9 @@ public interface WalletLedgerService {
     WalletTransaction transfer(TransferCommand command);
 
     /**
-     * 거래 목록을 최신순으로 조회한다.
+     * 거래 목록을 페이지 단위로 조회한다.
      *
-     * 조회 로직을 서비스 계층에서 캡슐화해 컨트롤러가 저장소에 직접 접근하지 않도록 한다.
+     * 대량 데이터 환경에서 전체 조회를 방지하고 조회 비용을 제어하기 위해 페이징을 사용한다.
      */
-    List<WalletTransaction> getTransactions();
+    Page<WalletTransaction> getTransactions(Pageable pageable);
 }

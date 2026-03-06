@@ -18,7 +18,9 @@ import com.example.walletledger.service.dto.TransferCommand;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Positive;
-import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -112,15 +114,15 @@ public class WalletCommandController {
     /**
      * 거래 목록 조회를 처리한다.
      *
-     * 비즈니스 규칙 변경 없이 저장된 거래를 최신순으로 조회해
-     * 공통 응답 구조로 반환한다.
+     * 기본 페이지 크기와 정렬을 적용해 대량 데이터 조회 시 과도한 응답을 방지한다.
      */
     @GetMapping("/transactions")
-    public ApiResponse<List<TransactionResponse>> getTransactions() {
-        List<TransactionResponse> transactions = walletLedgerService.getTransactions()
-            .stream()
-            .map(TransactionResponse::from)
-            .toList();
+    public ApiResponse<Page<TransactionResponse>> getTransactions(
+        @PageableDefault(size = 20, sort = "id", direction = org.springframework.data.domain.Sort.Direction.DESC)
+        Pageable pageable
+    ) {
+        Page<TransactionResponse> transactions = walletLedgerService.getTransactions(pageable)
+            .map(TransactionResponse::from);
         return ApiResponse.success(transactions);
     }
 }

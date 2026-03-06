@@ -15,11 +15,11 @@ import com.example.walletledger.repository.WalletRepository;
 import com.example.walletledger.service.dto.CreateWalletCommand;
 import com.example.walletledger.service.dto.MoneyCommand;
 import com.example.walletledger.service.dto.TransferCommand;
-import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -186,15 +186,15 @@ public class WalletLedgerServiceImpl implements WalletLedgerService {
     }
 
     /**
-     * 거래 목록을 최신순으로 조회한다.
+     * 거래 목록을 페이지 단위로 조회한다.
      *
      * 읽기 전용 트랜잭션으로 조회해 불필요한 변경 감지를 줄이고
-     * 컨트롤러의 저장소 직접 접근을 방지한다.
+     * 대량 거래 데이터에서도 안정적으로 조회할 수 있도록 한다.
      */
     @Override
     @Transactional(readOnly = true)
-    public List<WalletTransaction> getTransactions() {
-        return transactionRepository.findAll(Sort.by(Sort.Direction.DESC, "id"));
+    public Page<WalletTransaction> getTransactions(Pageable pageable) {
+        return transactionRepository.findAll(pageable);
     }
 
     private Wallet resolveById(Wallet first, Wallet second, Long targetId) {
