@@ -5,6 +5,8 @@ import com.example.walletledger.domain.wallet.Wallet;
 import com.example.walletledger.service.dto.CreateWalletCommand;
 import com.example.walletledger.service.dto.MoneyCommand;
 import com.example.walletledger.service.dto.TransferCommand;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 /**
  * 지갑 원장 핵심 유스케이스를 처리하는 서비스.
@@ -41,5 +43,11 @@ public interface WalletLedgerService {
      * 데드락 방지를 위해 지갑 식별자 오름차순으로 락 순서를 고정한다.
      */
     WalletTransaction transfer(TransferCommand command);
-}
 
+    /**
+     * 거래 목록을 페이지 단위로 조회한다.
+     *
+     * 대량 데이터 환경에서 전체 조회를 방지하고 조회 비용을 제어하기 위해 페이징을 사용한다.
+     */
+    Page<WalletTransaction> getTransactions(Pageable pageable);
+}
