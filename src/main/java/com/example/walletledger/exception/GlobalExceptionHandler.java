@@ -4,6 +4,8 @@ import com.example.walletledger.controller.dto.response.ApiResponse;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -21,6 +23,8 @@ import org.springframework.web.bind.MissingRequestHeaderException;
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     /**
      * 비즈니스 예외를 처리한다.
@@ -98,6 +102,8 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleUnknownException(Exception ex) {
+        // 원인 분석을 위해 예외 메시지와 전체 스택 트레이스를 함께 기록한다.
+        log.error("처리되지 않은 예외가 발생했습니다. message={}", ex.getMessage(), ex);
         return ResponseEntity
             .status(ErrorCode.INTERNAL_SERVER_ERROR.getHttpStatus())
             .body(ApiResponse.failure(
