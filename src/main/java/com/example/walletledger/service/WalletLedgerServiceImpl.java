@@ -15,9 +15,11 @@ import com.example.walletledger.repository.WalletRepository;
 import com.example.walletledger.service.dto.CreateWalletCommand;
 import com.example.walletledger.service.dto.MoneyCommand;
 import com.example.walletledger.service.dto.TransferCommand;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -181,6 +183,18 @@ public class WalletLedgerServiceImpl implements WalletLedgerService {
         );
 
         return tx;
+    }
+
+    /**
+     * 거래 목록을 최신순으로 조회한다.
+     *
+     * 읽기 전용 트랜잭션으로 조회해 불필요한 변경 감지를 줄이고
+     * 컨트롤러의 저장소 직접 접근을 방지한다.
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public List<WalletTransaction> getTransactions() {
+        return transactionRepository.findAll(Sort.by(Sort.Direction.DESC, "id"));
     }
 
     private Wallet resolveById(Wallet first, Wallet second, Long targetId) {

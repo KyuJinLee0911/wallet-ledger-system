@@ -11,7 +11,6 @@ import com.example.walletledger.controller.dto.response.TransferResponse;
 import com.example.walletledger.controller.dto.response.WalletCreateResponse;
 import com.example.walletledger.controller.dto.response.WithdrawResponse;
 import com.example.walletledger.domain.transaction.WalletTransaction;
-import com.example.walletledger.repository.TransactionRepository;
 import com.example.walletledger.service.WalletLedgerService;
 import com.example.walletledger.service.dto.CreateWalletCommand;
 import com.example.walletledger.service.dto.MoneyCommand;
@@ -27,7 +26,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.data.domain.Sort;
 
 /**
  * 지갑 명령/조회 API 컨트롤러.
@@ -40,12 +38,9 @@ import org.springframework.data.domain.Sort;
 public class WalletCommandController {
 
     private final WalletLedgerService walletLedgerService;
-    private final TransactionRepository transactionRepository;
 
-    public WalletCommandController(WalletLedgerService walletLedgerService,
-                                   TransactionRepository transactionRepository) {
+    public WalletCommandController(WalletLedgerService walletLedgerService) {
         this.walletLedgerService = walletLedgerService;
-        this.transactionRepository = transactionRepository;
     }
 
     /**
@@ -122,7 +117,7 @@ public class WalletCommandController {
      */
     @GetMapping("/transactions")
     public ApiResponse<List<TransactionResponse>> getTransactions() {
-        List<TransactionResponse> transactions = transactionRepository.findAll(Sort.by(Sort.Direction.DESC, "id"))
+        List<TransactionResponse> transactions = walletLedgerService.getTransactions()
             .stream()
             .map(TransactionResponse::from)
             .toList();

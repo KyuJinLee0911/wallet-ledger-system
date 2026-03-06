@@ -5,6 +5,7 @@ import com.example.walletledger.domain.wallet.Wallet;
 import com.example.walletledger.service.dto.CreateWalletCommand;
 import com.example.walletledger.service.dto.MoneyCommand;
 import com.example.walletledger.service.dto.TransferCommand;
+import java.util.List;
 
 /**
  * 지갑 원장 핵심 유스케이스를 처리하는 서비스.
@@ -41,5 +42,11 @@ public interface WalletLedgerService {
      * 데드락 방지를 위해 지갑 식별자 오름차순으로 락 순서를 고정한다.
      */
     WalletTransaction transfer(TransferCommand command);
-}
 
+    /**
+     * 거래 목록을 최신순으로 조회한다.
+     *
+     * 조회 로직을 서비스 계층에서 캡슐화해 컨트롤러가 저장소에 직접 접근하지 않도록 한다.
+     */
+    List<WalletTransaction> getTransactions();
+}
