@@ -18,6 +18,8 @@ import jakarta.validation.constraints.Positive;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -48,12 +50,12 @@ public class WalletCommandController {
      * 요청 DTO를 서비스 커맨드로 변환한 뒤 공통 성공 응답으로 감싼다.
      */
     @PostMapping("/wallets")
-    public ApiResponse<WalletCreateResponse> createWallet(@Valid @RequestBody WalletCreateRequest request) {
-        return ApiResponse.success(
+    public ResponseEntity<ApiResponse<WalletCreateResponse>> createWallet(@Valid @RequestBody WalletCreateRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(
             WalletCreateResponse.from(
                 walletLedgerService.createWallet(new CreateWalletCommand(request.memberId(), request.currency()))
             )
-        );
+        ));
     }
 
     /**
@@ -94,7 +96,7 @@ public class WalletCommandController {
      *
      * 데드락 방지 락 순서 및 원장 정합성 보장은 서비스 트랜잭션에서 처리된다.
      */
-    @PostMapping("/transfer")
+    @PostMapping("/transfers")
     public ApiResponse<TransactionResponse> transfer(@RequestHeader("Idempotency-Key") @NotBlank(message = "Idempotency-Key는 필수입니다.") String idempotencyKey,
                                       @Valid @RequestBody TransferRequest request) {
         WalletTransaction transaction = walletLedgerService.transfer(
