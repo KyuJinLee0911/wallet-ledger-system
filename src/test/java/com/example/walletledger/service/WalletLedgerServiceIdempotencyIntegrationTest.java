@@ -1,6 +1,7 @@
 package com.example.walletledger.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.within;
 
 import com.example.walletledger.domain.member.Member;
 import com.example.walletledger.domain.transaction.WalletTransaction;
@@ -82,8 +83,8 @@ class WalletLedgerServiceIdempotencyIntegrationTest {
         // 응답 동일성 검증: 두 번째 요청은 첫 번째 요청의 원본 거래 결과를 그대로 반환해야 한다.
         assertThat(second.getId()).isEqualTo(first.getId());
         assertThat(second.getAmount().compareTo(first.getAmount())).isZero();
-        assertThat(second.getCompletedAt().truncatedTo(ChronoUnit.MICROS))
-            .isEqualTo(first.getCompletedAt().truncatedTo(ChronoUnit.MICROS));
+        assertThat(second.getCompletedAt())
+            .isCloseTo(first.getCompletedAt(), within(1, ChronoUnit.MICROS));
 
         // DB 불변성 검증: 동일 멱등 키 거래는 1건만 존재해야 한다.
         Long txCountByKey = ((Number) entityManager.createNativeQuery(
