@@ -26,6 +26,18 @@
 
 ---
 
+## 설계 및 테스트 문서
+
+이 프로젝트의 상세 설계와 테스트 전략은 아래 문서를 참고할 수 있습니다.
+
+- [System Architecture](docs/architecture.md)
+- [ERD](docs/erd.md)
+- [API Specification](docs/api-spec.md)
+- [Idempotency Test Scenario](docs/test-scenario-idempotency.md)
+- [Concurrency Test Scenario](docs/test-scenario-concurrency.md)
+
+---
+
 ## 기술 스택
 
 | 분류 | 기술 |
