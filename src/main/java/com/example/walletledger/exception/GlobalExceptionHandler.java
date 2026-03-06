@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.bind.MissingRequestHeaderException;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 
 /**
  * 전역 예외 처리기.
@@ -93,6 +94,19 @@ public class GlobalExceptionHandler {
         return ResponseEntity
             .status(HttpStatus.BAD_REQUEST)
             .body(ApiResponse.failure("TYPE_MISMATCH", "요청 파라미터 타입이 올바르지 않습니다.", detail));
+    }
+
+    /**
+     * 잘못된 JSON 본문 파싱 실패를 처리한다.
+     *
+     * JSON 형식 오류나 필드 타입 불일치(예: amount에 문자열 입력)는
+     * 서버 오류가 아니라 클라이언트 입력 오류이므로 400으로 응답한다.
+     */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiResponse<Void>> handleHttpMessageNotReadableException(HttpMessageNotReadableException ex) {
+        return ResponseEntity
+            .status(HttpStatus.BAD_REQUEST)
+            .body(ApiResponse.failure("MALFORMED_JSON", "요청 본문(JSON) 형식이 올바르지 않습니다."));
     }
 
     /**
