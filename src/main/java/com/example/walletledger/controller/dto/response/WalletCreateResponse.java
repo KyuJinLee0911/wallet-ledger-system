@@ -2,7 +2,7 @@ package com.example.walletledger.controller.dto.response;
 
 import com.example.walletledger.domain.wallet.Wallet;
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 /**
  * 지갑 생성 API 응답 DTO.
@@ -16,7 +16,7 @@ public record WalletCreateResponse(
     BigDecimal balance,
     String currency,
     String status,
-    LocalDateTime createdAt
+    Instant createdAt
 ) {
     /**
      * 도메인 Wallet 객체를 API 응답 형태로 변환한다.
@@ -32,4 +32,3 @@ public record WalletCreateResponse(
         );
     }
 }
-
