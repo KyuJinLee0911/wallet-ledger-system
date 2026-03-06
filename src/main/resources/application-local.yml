@@ -1,0 +1,11 @@
+spring:
+  config:
+    activate:
+      on-profile: local
+  datasource:
+    username: wallet
+    password: wallet
+
+logging:
+  level:
+    org.hibernate.SQL: debug

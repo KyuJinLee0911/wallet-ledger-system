@@ -1,10 +1,10 @@
 spring:
   application:
     name: wallet-ledger-system
+  profiles:
+    default: local
   datasource:
     url: jdbc:postgresql://localhost:5432/wallet_ledger
-    username: wallet
-    password: wallet
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -19,7 +19,3 @@ spring:
 
 server:
   port: 8080
-
-logging:
-  level:
-    org.hibernate.SQL: debug

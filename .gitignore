@@ -109,6 +109,7 @@ application-dev.yml
 application-dev.properties
 application-prod.yml
 application-prod.properties
+!src/main/resources/application-local.yml
 
 # 예시 파일은 포함 (application-local.yml.example 등)
 !*.example
