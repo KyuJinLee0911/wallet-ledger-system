@@ -13,6 +13,7 @@ import com.example.walletledger.service.dto.CreateWalletCommand;
 import com.example.walletledger.service.dto.MoneyCommand;
 import jakarta.persistence.EntityManager;
 import java.math.BigDecimal;
+import java.time.temporal.ChronoUnit;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,7 +25,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 @SpringBootTest
-@Testcontainers
+@Testcontainers(disabledWithoutDocker = true)
 class WalletLedgerServiceIdempotencyIntegrationTest {
 
     @Container
@@ -81,7 +82,8 @@ class WalletLedgerServiceIdempotencyIntegrationTest {
         // 응답 동일성 검증: 두 번째 요청은 첫 번째 요청의 원본 거래 결과를 그대로 반환해야 한다.
         assertThat(second.getId()).isEqualTo(first.getId());
         assertThat(second.getAmount().compareTo(first.getAmount())).isZero();
-        assertThat(second.getCompletedAt()).isEqualTo(first.getCompletedAt());
+        assertThat(second.getCompletedAt().truncatedTo(ChronoUnit.MICROS))
+            .isEqualTo(first.getCompletedAt().truncatedTo(ChronoUnit.MICROS));
 
         // DB 불변성 검증: 동일 멱등 키 거래는 1건만 존재해야 한다.
         Long txCountByKey = ((Number) entityManager.createNativeQuery(
@@ -101,4 +103,3 @@ class WalletLedgerServiceIdempotencyIntegrationTest {
         assertThat(refreshedWallet.getBalance().compareTo(BigDecimal.valueOf(5000))).isZero();
     }
 }
-

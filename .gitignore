@@ -31,6 +31,7 @@ buildNumber.properties
 
 # Gradle
 .gradle/
+/.gradle-user-home/
 build/
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
@@ -121,6 +122,11 @@ application-prod.properties
 # Testcontainers
 # ===========================
 .testcontainers.properties
+
+# ===========================
+# Claude Code
+# ===========================
+.claude/
 
 # ===========================
 # Etc

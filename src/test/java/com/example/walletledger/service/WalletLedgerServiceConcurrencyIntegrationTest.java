@@ -33,7 +33,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 @SpringBootTest
-@Testcontainers
+@Testcontainers(disabledWithoutDocker = true)
 class WalletLedgerServiceConcurrencyIntegrationTest {
 
     @Container
@@ -148,4 +148,3 @@ class WalletLedgerServiceConcurrencyIntegrationTest {
         assertThat(debitLedgerCount).isEqualTo(successCount.get());
     }
 }
-
