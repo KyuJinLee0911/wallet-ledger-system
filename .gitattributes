@@ -1,0 +1,53 @@
+# ===========================
+# 기본 동작
+# ===========================
+
+# 모든 텍스트 파일 줄바꿈 자동 정규화 (LF 기준)
+* text=auto eol=lf
+
+# ===========================
+# 소스 코드
+# ===========================
+*.java    text eol=lf
+*.xml     text eol=lf
+*.yml     text eol=lf
+*.yaml    text eol=lf
+*.json    text eol=lf
+*.sql     text eol=lf
+*.properties text eol=lf
+*.gradle  text eol=lf
+*.kts     text eol=lf
+*.md      text eol=lf
+*.sh      text eol=lf
+
+# Windows 배치 파일은 CRLF 유지
+*.bat     text eol=crlf
+*.cmd     text eol=crlf
+
+# ===========================
+# Gradle / Maven Wrapper
+# ===========================
+gradlew         text eol=lf
+gradlew.bat     text eol=crlf
+mvnw            text eol=lf
+mvnw.cmd        text eol=crlf
+
+# Wrapper jar는 바이너리
+gradle/wrapper/gradle-wrapper.jar binary
+.mvn/wrapper/maven-wrapper.jar    binary
+
+# ===========================
+# 바이너리 파일 (diff/merge 제외)
+# ===========================
+*.class  binary
+*.jar    binary
+*.war    binary
+*.ear    binary
+*.png    binary
+*.jpg    binary
+*.jpeg   binary
+*.gif    binary
+*.ico    binary
+*.pdf    binary
+*.zip    binary
+*.tar.gz binary
