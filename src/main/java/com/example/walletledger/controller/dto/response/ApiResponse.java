@@ -28,7 +28,7 @@ public record ApiResponse<T>(
     /**
      * 본문 데이터가 필요 없는 성공 응답을 생성한다.
      */
-    public static ApiResponse<Void> success() {
+    public static ApiResponse<Void> successWithoutData() {
         return new ApiResponse<>(true, null, null, Instant.now());
     }
 
@@ -53,4 +53,3 @@ public record ApiResponse<T>(
         return failure(ApiError.of(code, message, detail));
     }
 }
-
