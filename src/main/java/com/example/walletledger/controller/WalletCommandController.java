@@ -5,11 +5,8 @@ import com.example.walletledger.controller.dto.request.TransferRequest;
 import com.example.walletledger.controller.dto.request.WalletCreateRequest;
 import com.example.walletledger.controller.dto.request.WithdrawRequest;
 import com.example.walletledger.controller.dto.response.ApiResponse;
-import com.example.walletledger.controller.dto.response.DepositResponse;
 import com.example.walletledger.controller.dto.response.TransactionResponse;
-import com.example.walletledger.controller.dto.response.TransferResponse;
 import com.example.walletledger.controller.dto.response.WalletCreateResponse;
-import com.example.walletledger.controller.dto.response.WithdrawResponse;
 import com.example.walletledger.domain.transaction.WalletTransaction;
 import com.example.walletledger.service.WalletLedgerService;
 import com.example.walletledger.service.dto.CreateWalletCommand;
@@ -66,13 +63,14 @@ public class WalletCommandController {
      * 서비스 결과를 응답 DTO로 변환한다.
      */
     @PostMapping("/wallets/{id}/deposit")
-    public ApiResponse<DepositResponse> deposit(@PathVariable("id") @Positive(message = "walletId는 1 이상이어야 합니다.") Long walletId,
+    public ApiResponse<TransactionResponse> deposit(@PathVariable("id") @Positive(message = "walletId는 1 이상이어야 합니다.") Long walletId,
                                      @RequestHeader("Idempotency-Key") @NotBlank(message = "Idempotency-Key는 필수입니다.") String idempotencyKey,
                                      @Valid @RequestBody DepositRequest request) {
         WalletTransaction transaction = walletLedgerService.deposit(
             new MoneyCommand(walletId, request.amount(), request.description(), idempotencyKey)
         );
-        return ApiResponse.success(DepositResponse.from(transaction));
+        // 입금/출금/이체는 모두 거래 단위 결과를 반환하므로 공통 거래 응답 DTO를 사용한다.
+        return ApiResponse.success(TransactionResponse.from(transaction));
     }
 
     /**
@@ -82,13 +80,13 @@ public class WalletCommandController {
      * 잔액 검증/동시성 제어는 서비스 계층에 위임한다.
      */
     @PostMapping("/wallets/{id}/withdraw")
-    public ApiResponse<WithdrawResponse> withdraw(@PathVariable("id") @Positive(message = "walletId는 1 이상이어야 합니다.") Long walletId,
+    public ApiResponse<TransactionResponse> withdraw(@PathVariable("id") @Positive(message = "walletId는 1 이상이어야 합니다.") Long walletId,
                                       @RequestHeader("Idempotency-Key") @NotBlank(message = "Idempotency-Key는 필수입니다.") String idempotencyKey,
                                       @Valid @RequestBody WithdrawRequest request) {
         WalletTransaction transaction = walletLedgerService.withdraw(
             new MoneyCommand(walletId, request.amount(), request.description(), idempotencyKey)
         );
-        return ApiResponse.success(WithdrawResponse.from(transaction));
+        return ApiResponse.success(TransactionResponse.from(transaction));
     }
 
     /**
@@ -97,7 +95,7 @@ public class WalletCommandController {
      * 데드락 방지 락 순서 및 원장 정합성 보장은 서비스 트랜잭션에서 처리된다.
      */
     @PostMapping("/transfer")
-    public ApiResponse<TransferResponse> transfer(@RequestHeader("Idempotency-Key") @NotBlank(message = "Idempotency-Key는 필수입니다.") String idempotencyKey,
+    public ApiResponse<TransactionResponse> transfer(@RequestHeader("Idempotency-Key") @NotBlank(message = "Idempotency-Key는 필수입니다.") String idempotencyKey,
                                       @Valid @RequestBody TransferRequest request) {
         WalletTransaction transaction = walletLedgerService.transfer(
             new TransferCommand(
@@ -108,7 +106,7 @@ public class WalletCommandController {
                 idempotencyKey
             )
         );
-        return ApiResponse.success(TransferResponse.from(transaction));
+        return ApiResponse.success(TransactionResponse.from(transaction));
     }
 
     /**
