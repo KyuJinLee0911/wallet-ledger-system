@@ -3,6 +3,7 @@ package com.example.walletledger.exception;
 import org.springframework.http.HttpStatus;
 
 public enum ErrorCode {
+    INVALID_REQUEST(HttpStatus.BAD_REQUEST, "요청 값이 올바르지 않습니다."),
     MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "회원을 찾을 수 없습니다."),
     WALLET_NOT_FOUND(HttpStatus.NOT_FOUND, "지갑을 찾을 수 없습니다."),
     WALLET_NOT_ACTIVE(HttpStatus.BAD_REQUEST, "활성 상태 지갑이 아닙니다."),
@@ -28,4 +29,3 @@ public enum ErrorCode {
         return defaultMessage;
     }
 }
-

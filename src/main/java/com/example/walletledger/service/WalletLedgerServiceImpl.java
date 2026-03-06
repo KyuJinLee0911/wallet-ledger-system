@@ -213,13 +213,14 @@ public class WalletLedgerServiceImpl implements WalletLedgerService {
 
     private void validateIdempotencyKey(String idempotencyKey) {
         if (idempotencyKey == null || idempotencyKey.isBlank()) {
-            throw new WalletBusinessException(ErrorCode.IDEMPOTENCY_KEY_CONFLICT, "멱등 키는 필수입니다.");
+            // 필수 입력 누락은 충돌이 아니라 잘못된 요청이므로 BAD_REQUEST 계열로 처리한다.
+            throw new WalletBusinessException(ErrorCode.INVALID_REQUEST, "멱등 키는 필수입니다.");
         }
     }
 
     private void validateMoneyCommand(MoneyCommand command) {
         if (command == null || command.walletId() == null) {
-            throw new WalletBusinessException(ErrorCode.WALLET_NOT_FOUND, "지갑 식별자가 필요합니다.");
+            throw new WalletBusinessException(ErrorCode.INVALID_REQUEST, "지갑 식별자가 필요합니다.");
         }
         if (command.amount() == null || command.amount().signum() <= 0) {
             throw new WalletBusinessException(ErrorCode.INVALID_AMOUNT, "거래 금액은 0보다 커야 합니다.");
@@ -228,7 +229,7 @@ public class WalletLedgerServiceImpl implements WalletLedgerService {
 
     private void validateTransferCommand(TransferCommand command) {
         if (command == null || command.fromWalletId() == null || command.toWalletId() == null) {
-            throw new WalletBusinessException(ErrorCode.WALLET_NOT_FOUND, "송신/수신 지갑 식별자가 필요합니다.");
+            throw new WalletBusinessException(ErrorCode.INVALID_REQUEST, "송신/수신 지갑 식별자가 필요합니다.");
         }
         if (command.amount() == null || command.amount().signum() <= 0) {
             throw new WalletBusinessException(ErrorCode.INVALID_AMOUNT, "거래 금액은 0보다 커야 합니다.");
