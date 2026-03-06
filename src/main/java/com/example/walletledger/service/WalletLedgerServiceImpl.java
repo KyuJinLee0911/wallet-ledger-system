@@ -56,7 +56,7 @@ public class WalletLedgerServiceImpl implements WalletLedgerService {
     @Transactional
     public Wallet createWallet(CreateWalletCommand command) {
         if (command == null || command.memberId() == null) {
-            throw new WalletBusinessException(ErrorCode.MEMBER_NOT_FOUND, "지갑 생성에는 회원 식별자가 필요합니다.");
+            throw new WalletBusinessException(ErrorCode.INVALID_REQUEST, "지갑 생성에는 회원 식별자가 필요합니다.");
         }
 
         Member member = memberRepository.findById(command.memberId())
