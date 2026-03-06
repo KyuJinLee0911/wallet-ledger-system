@@ -2,6 +2,7 @@ package com.example.walletledger.controller.dto.request;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Positive;
 
 /**
  * 지갑 생성 API 요청 DTO.
@@ -11,10 +12,10 @@ import jakarta.validation.constraints.Pattern;
  */
 public record WalletCreateRequest(
     @NotNull(message = "memberId는 필수입니다.")
+    @Positive(message = "memberId는 1 이상이어야 합니다.")
     Long memberId,
 
     @Pattern(regexp = "^[A-Z]{3}$", message = "currency는 3자리 대문자 통화 코드여야 합니다.")
     String currency
 ) {
 }
-

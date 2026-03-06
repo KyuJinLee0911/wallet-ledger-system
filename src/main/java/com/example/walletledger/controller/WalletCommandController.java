@@ -17,7 +17,10 @@ import com.example.walletledger.service.dto.CreateWalletCommand;
 import com.example.walletledger.service.dto.MoneyCommand;
 import com.example.walletledger.service.dto.TransferCommand;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Positive;
 import java.util.List;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -33,6 +36,7 @@ import org.springframework.data.domain.Sort;
  * 핵심 비즈니스 로직은 서비스 계층에 위임한다.
  */
 @RestController
+@Validated
 public class WalletCommandController {
 
     private final WalletLedgerService walletLedgerService;
@@ -65,8 +69,8 @@ public class WalletCommandController {
      * 서비스 결과를 응답 DTO로 변환한다.
      */
     @PostMapping("/wallets/{id}/deposit")
-    public ApiResponse<DepositResponse> deposit(@PathVariable("id") Long walletId,
-                                     @RequestHeader("Idempotency-Key") String idempotencyKey,
+    public ApiResponse<DepositResponse> deposit(@PathVariable("id") @Positive(message = "walletId는 1 이상이어야 합니다.") Long walletId,
+                                     @RequestHeader("Idempotency-Key") @NotBlank(message = "Idempotency-Key는 필수입니다.") String idempotencyKey,
                                      @Valid @RequestBody DepositRequest request) {
         WalletTransaction transaction = walletLedgerService.deposit(
             new MoneyCommand(walletId, request.amount(), request.description(), idempotencyKey)
@@ -81,8 +85,8 @@ public class WalletCommandController {
      * 잔액 검증/동시성 제어는 서비스 계층에 위임한다.
      */
     @PostMapping("/wallets/{id}/withdraw")
-    public ApiResponse<WithdrawResponse> withdraw(@PathVariable("id") Long walletId,
-                                      @RequestHeader("Idempotency-Key") String idempotencyKey,
+    public ApiResponse<WithdrawResponse> withdraw(@PathVariable("id") @Positive(message = "walletId는 1 이상이어야 합니다.") Long walletId,
+                                      @RequestHeader("Idempotency-Key") @NotBlank(message = "Idempotency-Key는 필수입니다.") String idempotencyKey,
                                       @Valid @RequestBody WithdrawRequest request) {
         WalletTransaction transaction = walletLedgerService.withdraw(
             new MoneyCommand(walletId, request.amount(), request.description(), idempotencyKey)
@@ -96,7 +100,7 @@ public class WalletCommandController {
      * 데드락 방지 락 순서 및 원장 정합성 보장은 서비스 트랜잭션에서 처리된다.
      */
     @PostMapping("/transfer")
-    public ApiResponse<TransferResponse> transfer(@RequestHeader("Idempotency-Key") String idempotencyKey,
+    public ApiResponse<TransferResponse> transfer(@RequestHeader("Idempotency-Key") @NotBlank(message = "Idempotency-Key는 필수입니다.") String idempotencyKey,
                                       @Valid @RequestBody TransferRequest request) {
         WalletTransaction transaction = walletLedgerService.transfer(
             new TransferCommand(

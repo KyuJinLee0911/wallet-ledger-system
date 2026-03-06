@@ -4,6 +4,7 @@ import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 
@@ -15,9 +16,11 @@ import java.math.BigDecimal;
  */
 public record TransferRequest(
     @NotNull(message = "fromWalletId는 필수입니다.")
+    @Positive(message = "fromWalletId는 1 이상이어야 합니다.")
     Long fromWalletId,
 
     @NotNull(message = "toWalletId는 필수입니다.")
+    @Positive(message = "toWalletId는 1 이상이어야 합니다.")
     Long toWalletId,
 
     @NotNull(message = "amount는 필수입니다.")
@@ -39,4 +42,3 @@ public record TransferRequest(
         return !fromWalletId.equals(toWalletId);
     }
 }
-
