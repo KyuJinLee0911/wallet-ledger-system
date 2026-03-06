@@ -87,7 +87,7 @@ public class WalletLedgerServiceImpl implements WalletLedgerService {
         Wallet wallet = walletRepository.findByIdForUpdate(command.walletId())
             .orElseThrow(() -> new WalletBusinessException(ErrorCode.WALLET_NOT_FOUND));
 
-        WalletTransaction tx = saveStartedTransaction(command.idempotencyKey(), TransactionType.DEPOSIT);
+        WalletTransaction tx = saveStartedTransaction(command.idempotencyKey(), TransactionType.DEPOSIT, command.amount());
         if (tx.getStatus() == TransactionStatus.COMPLETED) {
             // 동일 멱등 키의 정상 재시도인 경우 기존 성공 결과를 그대로 반환해 멱등성을 보장한다.
             return tx;
@@ -121,7 +121,7 @@ public class WalletLedgerServiceImpl implements WalletLedgerService {
         Wallet wallet = walletRepository.findByIdForUpdate(command.walletId())
             .orElseThrow(() -> new WalletBusinessException(ErrorCode.WALLET_NOT_FOUND));
 
-        WalletTransaction tx = saveStartedTransaction(command.idempotencyKey(), TransactionType.WITHDRAW);
+        WalletTransaction tx = saveStartedTransaction(command.idempotencyKey(), TransactionType.WITHDRAW, command.amount());
         if (tx.getStatus() == TransactionStatus.COMPLETED) {
             // 동시 재시도 상황에서 UNIQUE 충돌 후 기존 완료 거래를 읽은 경우 추가 처리 없이 반환한다.
             return tx;
@@ -164,7 +164,7 @@ public class WalletLedgerServiceImpl implements WalletLedgerService {
         Wallet fromWallet = resolveById(firstLockedWallet, secondLockedWallet, command.fromWalletId());
         Wallet toWallet = resolveById(firstLockedWallet, secondLockedWallet, command.toWalletId());
 
-        WalletTransaction tx = saveStartedTransaction(command.idempotencyKey(), TransactionType.TRANSFER);
+        WalletTransaction tx = saveStartedTransaction(command.idempotencyKey(), TransactionType.TRANSFER, command.amount());
         if (tx.getStatus() == TransactionStatus.COMPLETED) {
             // 이미 성공한 이체 재요청은 원거래 결과만 반환하고 잔액/원장 재반영을 막는다.
             return tx;
@@ -207,9 +207,9 @@ public class WalletLedgerServiceImpl implements WalletLedgerService {
         throw new WalletBusinessException(ErrorCode.WALLET_NOT_FOUND);
     }
 
-    private WalletTransaction saveStartedTransaction(String idempotencyKey, TransactionType type) {
+    private WalletTransaction saveStartedTransaction(String idempotencyKey, TransactionType type, java.math.BigDecimal amount) {
         try {
-            return transactionRepository.save(WalletTransaction.start(idempotencyKey, type));
+            return transactionRepository.save(WalletTransaction.start(idempotencyKey, type, amount));
         } catch (DataIntegrityViolationException ex) {
             Optional<WalletTransaction> existing = transactionRepository.findByIdempotencyKey(idempotencyKey);
             if (existing.isPresent() && existing.get().getStatus() == TransactionStatus.COMPLETED && existing.get().getType() == type) {
