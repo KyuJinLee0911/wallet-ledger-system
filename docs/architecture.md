@@ -264,6 +264,11 @@ findReplayableTransaction()
 | PENDING 상태 거래 존재 | `IDEMPOTENCY_KEY_CONFLICT` 예외 (처리 중) |
 | 다른 타입의 완료 거래 존재 | `IDEMPOTENCY_KEY_CONFLICT` 예외 (타입 불일치) |
 
+### REQUIRES_NEW와 PENDING 잔존 트레이드오프
+멱등 키 UNIQUE 충돌 시 현재 트랜잭션/세션 오염을 피하기 위해 시작 거래(PENDING) insert를 REQUIRES_NEW 경계에서 처리한다.
+이 구조에서는 외부 트랜잭션이 이후 단계에서 롤백되더라도 REQUIRES_NEW로 커밋된 PENDING 행이 DB에 남을 수 있다.
+하지만 재시도(replay) 판단은 COMPLETED 상태만 대상으로 하므로, PENDING 잔존은 중복 성공 응답을 만들지 않으며 정합성을 깨지 않는다.
+운영 환경에서는 오래된 PENDING 정리 배치, 상태 기준 TTL 정책, 모니터링 알림으로 잔존 레코드를 관리할 수 있다.
 ---
 
 ## 6. 원장 설계
