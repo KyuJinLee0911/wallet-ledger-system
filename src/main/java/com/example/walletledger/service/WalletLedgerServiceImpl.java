@@ -68,6 +68,21 @@ public class WalletLedgerServiceImpl implements WalletLedgerService {
     }
 
     /**
+     * 지갑 ID 기준으로 지갑 상세 정보를 조회한다.
+     *
+     * 조회 전용 트랜잭션에서 단건 조회만 수행한다.
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public Wallet getWallet(Long walletId) {
+        if (walletId == null) {
+            throw new WalletBusinessException(ErrorCode.INVALID_REQUEST, "지갑 ID는 필수입니다.");
+        }
+        return walletRepository.findById(walletId)
+            .orElseThrow(() -> new WalletBusinessException(ErrorCode.WALLET_NOT_FOUND));
+    }
+
+    /**
      * 지갑에 입금 거래를 수행한다.
      *
      * 동일 지갑으로 동시 입금이 들어올 수 있으므로 지갑 행을 비관적 락으로 점유한 뒤

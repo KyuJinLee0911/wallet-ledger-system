@@ -24,6 +24,13 @@ public interface WalletLedgerService {
     Wallet createWallet(CreateWalletCommand command);
 
     /**
+     * 지갑 ID로 지갑 상세 정보를 조회한다.
+     *
+     * 조회 전용 유스케이스로 변경 없이 현재 지갑 상태를 반환한다.
+     */
+    Wallet getWallet(Long walletId);
+
+    /**
      * 지갑에 금액을 입금한다.
      *
      * 지갑 행에 비관적 락을 획득하여 동시 요청에서 잔액 정합성을 보장한다.
