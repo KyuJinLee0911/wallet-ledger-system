@@ -216,6 +216,23 @@ public class WalletLedgerServiceImpl implements WalletLedgerService {
     }
 
     /**
+     * 지갑 ID 기준으로 원장 내역을 페이지 단위로 조회한다.
+     *
+     * 조회 전용 트랜잭션으로 지갑 존재를 확인한 뒤 원장 데이터만 조회한다.
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public Page<LedgerEntry> getLedgerEntries(Long walletId, Pageable pageable) {
+        if (walletId == null) {
+            throw new WalletBusinessException(ErrorCode.INVALID_REQUEST, "지갑 ID는 필수입니다.");
+        }
+        if (!walletRepository.existsById(walletId)) {
+            throw new WalletBusinessException(ErrorCode.WALLET_NOT_FOUND);
+        }
+        return ledgerEntryRepository.findByWalletId(walletId, pageable);
+    }
+
+    /**
      * 거래 목록을 페이지 단위로 조회한다.
      *
      * 읽기 전용 트랜잭션으로 조회해 불필요한 변경 감지를 줄이고
@@ -226,7 +243,6 @@ public class WalletLedgerServiceImpl implements WalletLedgerService {
     public Page<WalletTransaction> getTransactions(Pageable pageable) {
         return transactionRepository.findAll(pageable);
     }
-
     private Wallet resolveById(Wallet first, Wallet second, Long targetId) {
         if (Objects.equals(first.getId(), targetId)) {
             return first;
