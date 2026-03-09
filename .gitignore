@@ -130,6 +130,11 @@ application-prod.properties
 .claude/
 
 # ===========================
+# Personal Notes (Git 미포함)
+# ===========================
+docs/interview-prep.md
+
+# ===========================
 # Etc
 # ===========================
 *.orig

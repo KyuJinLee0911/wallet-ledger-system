@@ -285,7 +285,8 @@ status (PENDING/COMPLETED)      type (CREDIT/DEBIT)
 amount                          amount
 requested_at                    balance_after
 completed_at                    description
-                                created_at
+created_at                      created_at
+updated_at                      updated_at
 ```
 
 `transactions`는 "거래가 일어났다"는 사실과 그 상태를 관리한다.
