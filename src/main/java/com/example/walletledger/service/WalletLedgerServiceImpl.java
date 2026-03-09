@@ -17,7 +17,6 @@ import com.example.walletledger.service.dto.MoneyCommand;
 import com.example.walletledger.service.dto.TransferCommand;
 import java.util.Objects;
 import java.util.Optional;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -36,15 +35,18 @@ public class WalletLedgerServiceImpl implements WalletLedgerService {
     private final WalletRepository walletRepository;
     private final TransactionRepository transactionRepository;
     private final LedgerEntryRepository ledgerEntryRepository;
+    private final StartedTransactionInsertService startedTransactionInsertService;
 
     public WalletLedgerServiceImpl(MemberRepository memberRepository,
                                    WalletRepository walletRepository,
                                    TransactionRepository transactionRepository,
-                                   LedgerEntryRepository ledgerEntryRepository) {
+                                   LedgerEntryRepository ledgerEntryRepository,
+                                   StartedTransactionInsertService startedTransactionInsertService) {
         this.memberRepository = memberRepository;
         this.walletRepository = walletRepository;
         this.transactionRepository = transactionRepository;
         this.ledgerEntryRepository = ledgerEntryRepository;
+        this.startedTransactionInsertService = startedTransactionInsertService;
     }
 
     /**
@@ -255,8 +257,10 @@ public class WalletLedgerServiceImpl implements WalletLedgerService {
 
     private WalletTransaction saveStartedTransaction(String idempotencyKey, TransactionType type, java.math.BigDecimal amount) {
         try {
-            return transactionRepository.save(WalletTransaction.start(idempotencyKey, type, amount));
-        } catch (DataIntegrityViolationException ex) {
+            // UNIQUE 충돌 가능 구간을 별도 트랜잭션으로 분리해 현재 트랜잭션 오염을 방지한다.
+            return startedTransactionInsertService.insertStartedTransaction(idempotencyKey, type, amount);
+        } catch (StartedTransactionInsertService.DuplicateIdempotencyKeyException ex) {
+            // 외부 트랜잭션은 유효하므로 안전하게 기존 거래를 재조회해 멱등 결과를 반환할 수 있다.
             Optional<WalletTransaction> existing = transactionRepository.findByIdempotencyKey(idempotencyKey);
             if (existing.isPresent() && existing.get().getStatus() == TransactionStatus.COMPLETED && existing.get().getType() == type) {
                 // DB UNIQUE 제약 충돌이 발생해도 기존 완료 거래를 반환해 재시도 요청을 멱등하게 처리한다.
