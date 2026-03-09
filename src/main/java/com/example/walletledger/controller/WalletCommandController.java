@@ -138,4 +138,16 @@ public class WalletCommandController {
             .map(TransactionResponse::from);
         return ApiResponse.success(transactions);
     }
+
+    /**
+     * 거래 단건 상세 조회를 처리한다.
+     *
+     * 컨트롤러는 경로 변수 검증과 응답 매핑만 수행하고 조회 로직은 서비스에 위임한다.
+     */
+    @GetMapping("/transactions/{transactionId}")
+    public ApiResponse<TransactionResponse> getTransaction(
+        @PathVariable("transactionId") @Positive(message = "transactionId는 1 이상이어야 합니다.") Long transactionId
+    ) {
+        return ApiResponse.success(TransactionResponse.from(walletLedgerService.getTransaction(transactionId)));
+    }
 }

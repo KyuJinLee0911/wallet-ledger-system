@@ -201,6 +201,21 @@ public class WalletLedgerServiceImpl implements WalletLedgerService {
     }
 
     /**
+     * 거래 ID 기준으로 단건 거래를 조회한다.
+     *
+     * 조회 전용 트랜잭션으로 단건 조회만 수행한다.
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public WalletTransaction getTransaction(Long transactionId) {
+        if (transactionId == null) {
+            throw new WalletBusinessException(ErrorCode.INVALID_REQUEST, "거래 ID는 필수입니다.");
+        }
+        return transactionRepository.findById(transactionId)
+            .orElseThrow(() -> new WalletBusinessException(ErrorCode.TRANSACTION_NOT_FOUND));
+    }
+
+    /**
      * 거래 목록을 페이지 단위로 조회한다.
      *
      * 읽기 전용 트랜잭션으로 조회해 불필요한 변경 감지를 줄이고
