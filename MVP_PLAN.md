@@ -77,38 +77,45 @@
 
 ## API (MVP 범위)
 
-```
-POST   /api/v1/wallets
-       지갑 생성
-       Body: { memberId }
+> 실제 구현 경로는 `/api/v1/` 접두사 없이 `/`로 시작한다.
 
-GET    /api/v1/wallets/{walletId}
+```
+POST   /wallets
+       지갑 생성
+       Body: { memberId, currency? }
+
+GET    /wallets/{walletId}
        지갑 정보 및 잔액 조회
 
-POST   /api/v1/wallets/{walletId}/deposit
+POST   /wallets/{walletId}/deposit
        입금
        Header: Idempotency-Key (필수)
-       Body: { amount, description }
+       Body: { amount, description? }
 
-POST   /api/v1/wallets/{walletId}/withdraw
+POST   /wallets/{walletId}/withdraw
        출금
        Header: Idempotency-Key (필수)
-       Body: { amount, description }
+       Body: { amount, description? }
 
-POST   /api/v1/transfers
+POST   /transfers
        이체
        Header: Idempotency-Key (필수)
-       Body: { fromWalletId, toWalletId, amount, description }
+       Body: { fromWalletId, toWalletId, amount, description? }
 
-GET    /api/v1/wallets/{walletId}/ledger
-       원장 이력 조회
-       Query: page(default=0), size(default=20)
+GET    /wallets/{walletId}/ledger
+       원장 이력 조회 (최신순)
+       Query: page(default=0), size(default=20), sort(default=createdAt,desc)
 
-GET    /api/v1/transactions/{transactionId}
+GET    /transactions
+       전체 거래 목록 조회 (최신순)
+       Query: page(default=0), size(default=20), sort(default=id,desc)
+       ※ MVP 한계: wallet_id 미저장으로 지갑별 필터링 미지원
+
+GET    /transactions/{transactionId}
        단건 거래 조회
 ```
 
-총 **7개 엔드포인트**.
+총 **8개 엔드포인트**.
 
 ---
 
@@ -261,4 +268,53 @@ MVP 완성 후 여유가 생기면 아래 순서로 추가한다.
 
 ---
 
-*문서 최종 수정: 2026-03-06*
+---
+
+## 구현 현황 (Implementation Status)
+
+### 기능별 완료 상태
+
+| 기능 | 상태 | 비고 |
+|------|------|------|
+| 지갑 생성 (`POST /wallets`) | ✅ 완료 | |
+| 지갑 상세 조회 (`GET /wallets/{id}`) | ✅ 완료 | |
+| 입금 (`POST /wallets/{id}/deposit`) | ✅ 완료 | |
+| 출금 + 비관적 락 (`POST /wallets/{id}/withdraw`) | ✅ 완료 | `SELECT FOR UPDATE` |
+| 이체 + 데드락 방지 (`POST /transfers`) | ✅ 완료 | walletId 오름차순 락 순서 |
+| Idempotency Key 처리 | ✅ 완료 | Soft Check + REQUIRES_NEW UNIQUE Catch |
+| 불변 원장 (`LedgerEntry`) | ✅ 완료 | CREDIT / DEBIT 분리 저장 |
+| 원장 이력 조회 (`GET /wallets/{id}/ledger`) | ✅ 완료 | 페이지네이션, createdAt DESC |
+| 전체 거래 목록 조회 (`GET /transactions`) | ✅ 완료 | wallet_id 미저장으로 전체 조회만 가능 (MVP 한계) |
+| 단건 거래 조회 (`GET /transactions/{id}`) | ✅ 완료 | |
+| 글로벌 예외 처리 | ✅ 완료 | `GlobalExceptionHandler`, 공통 `ApiResponse` |
+| 감사 로그 (EntityListener) | ⚠️ 부분 완료 | Spring `AuditingEntityListener`로 `created_at`/`updated_at` 자동 기록. `@PreUpdate`/`@PrePersist` 커스텀 로깅은 미구현 |
+| 동시성 테스트 | ✅ 완료 | 출금 20스레드 + 양방향 이체 테스트 (`CyclicBarrier`) |
+| 통합 테스트 (Testcontainers) | ✅ 완료 | PostgreSQL 실컨테이너 기반 5개 테스트 클래스 |
+| Docker Compose | ❌ 미구현 | `docker-compose.yml` 미생성. 실행 방법은 README의 `docker run` 명령으로 대체 |
+
+### 패키지 구조 (실제 구현)
+
+실제 패키지 경로는 계획 문서와 다르다.
+
+```
+src/main/java/com/example/walletledger/   ← 실제 패키지 (계획: com.example.wallet)
+  ├── domain/
+  │   ├── member/
+  │   ├── wallet/
+  │   ├── transaction/
+  │   └── ledger/
+  ├── service/
+  │   ├── WalletLedgerService.java
+  │   ├── WalletLedgerServiceImpl.java
+  │   └── StartedTransactionInsertService.java   ← REQUIRES_NEW 멱등성 분리
+  ├── controller/
+  │   ├── WalletCommandController.java
+  │   └── dto/
+  ├── exception/
+  │   ├── GlobalExceptionHandler.java
+  │   ├── WalletBusinessException.java
+  │   └── ErrorCode.java
+  └── WalletLedgerSystemApplication.java
+```
+
+*문서 최종 수정: 2026-03-09*

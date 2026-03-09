@@ -40,10 +40,13 @@
 | Method | Path | 설명 |
 |--------|------|------|
 | POST | `/wallets` | 지갑 생성 |
+| GET | `/wallets/{walletId}` | 지갑 상세 조회 |
 | POST | `/wallets/{walletId}/deposit` | 입금 |
 | POST | `/wallets/{walletId}/withdraw` | 출금 |
+| GET | `/wallets/{walletId}/ledger` | 지갑 원장 이력 조회 |
 | POST | `/transfers` | 이체 |
-| GET | `/transactions` | 거래 목록 조회 |
+| GET | `/transactions` | 전체 거래 목록 조회 |
+| GET | `/transactions/{transactionId}` | 거래 단건 조회 |
 
 ---
 
@@ -93,9 +96,50 @@ POST /wallets
 
 | HTTP | 코드 | 원인 |
 |------|------|------|
-| 400 | `INVALID_REQUEST` | memberId 누락 또는 유효하지 않은 값 |
-| 400 | `VALIDATION_ERROR` | currency 형식 오류 |
+| 400 | `VALIDATION_ERROR` | memberId 누락 또는 1 미만 값 (Bean Validation 처리) |
+| 400 | `VALIDATION_ERROR` | currency 형식 오류 (3자리 대문자 아닌 경우) |
 | 404 | `MEMBER_NOT_FOUND` | 존재하지 않는 회원 |
+
+---
+
+### 지갑 상세 조회
+
+```
+GET /wallets/{walletId}
+```
+
+지갑 ID로 지갑 정보와 현재 잔액을 조회한다.
+
+**Path Variable**
+
+| 파라미터 | 설명 |
+|----------|------|
+| walletId | 조회할 지갑 ID (1 이상) |
+
+**Response** `200 OK`
+
+```json
+{
+  "success": true,
+  "data": {
+    "walletId": 10,
+    "memberId": 1,
+    "balance": 5000.0000,
+    "currency": "KRW",
+    "status": "ACTIVE",
+    "createdAt": "2024-01-15T10:30:00Z",
+    "updatedAt": "2024-01-15T10:31:00Z"
+  },
+  "error": null,
+  "timestamp": "2024-01-15T10:35:00Z"
+}
+```
+
+**오류 케이스**
+
+| HTTP | 코드 | 원인 |
+|------|------|------|
+| 404 | `WALLET_NOT_FOUND` | 존재하지 않는 지갑 |
 
 ---
 
@@ -156,7 +200,7 @@ Idempotency-Key: {고유 키}
 | HTTP | 코드 | 원인 |
 |------|------|------|
 | 400 | `MISSING_HEADER` | Idempotency-Key 헤더 누락 |
-| 400 | `INVALID_AMOUNT` | 금액이 0 이하 |
+| 400 | `VALIDATION_ERROR` | amount가 0.0001 미만 (Bean Validation 처리) |
 | 400 | `WALLET_NOT_ACTIVE` | 비활성(FROZEN) 지갑 |
 | 404 | `WALLET_NOT_FOUND` | 존재하지 않는 지갑 |
 | 409 | `IDEMPOTENCY_KEY_CONFLICT` | 동일 키로 다른 타입의 거래가 이미 존재 |
@@ -220,8 +264,8 @@ Idempotency-Key: {고유 키}
 | HTTP | 코드 | 원인 |
 |------|------|------|
 | 400 | `MISSING_HEADER` | Idempotency-Key 헤더 누락 |
+| 400 | `VALIDATION_ERROR` | amount가 0.0001 미만 (Bean Validation 처리) |
 | 400 | `INSUFFICIENT_BALANCE` | 출금액 > 현재 잔액 |
-| 400 | `INVALID_AMOUNT` | 금액이 0 이하 |
 | 400 | `WALLET_NOT_ACTIVE` | 비활성(FROZEN) 지갑 |
 | 404 | `WALLET_NOT_FOUND` | 존재하지 않는 지갑 |
 | 409 | `IDEMPOTENCY_KEY_CONFLICT` | 동일 키로 다른 타입의 거래가 이미 존재 |
@@ -291,6 +335,74 @@ Idempotency-Key: {고유 키}
 
 ---
 
+### 지갑 원장 이력 조회
+
+```
+GET /wallets/{walletId}/ledger?page=0&size=20
+```
+
+특정 지갑의 원장 이력을 최신순으로 페이지 단위로 조회한다.
+
+**Path Variable**
+
+| 파라미터 | 설명 |
+|----------|------|
+| walletId | 조회할 지갑 ID (1 이상) |
+
+**Query Parameters**
+
+| 파라미터 | 기본값 | 설명 |
+|----------|--------|------|
+| page | 0 | 페이지 번호 (0부터 시작) |
+| size | 20 | 페이지당 항목 수 |
+| sort | createdAt,desc | 정렬 기준 |
+
+**Response** `200 OK`
+
+```json
+{
+  "success": true,
+  "data": {
+    "content": [
+      {
+        "ledgerEntryId": 5,
+        "walletId": 10,
+        "transactionId": 102,
+        "type": "DEBIT",
+        "amount": 5000.0000,
+        "balanceAfter": 5000.0000,
+        "description": "결제",
+        "createdAt": "2024-01-15T10:31:00Z"
+      },
+      {
+        "ledgerEntryId": 4,
+        "walletId": 10,
+        "transactionId": 101,
+        "type": "CREDIT",
+        "amount": 10000.0000,
+        "balanceAfter": 10000.0000,
+        "description": "포인트 충전",
+        "createdAt": "2024-01-15T10:30:00Z"
+      }
+    ],
+    "totalElements": 5,
+    "totalPages": 1,
+    "size": 20,
+    "number": 0
+  },
+  "error": null,
+  "timestamp": "2024-01-15T10:35:00Z"
+}
+```
+
+**오류 케이스**
+
+| HTTP | 코드 | 원인 |
+|------|------|------|
+| 404 | `WALLET_NOT_FOUND` | 존재하지 않는 지갑 |
+
+---
+
 ### 거래 목록 조회
 
 ```
@@ -338,6 +450,47 @@ GET /transactions?page=0&size=20&sort=id,desc
   "timestamp": "2024-01-15T10:33:00Z"
 }
 ```
+
+---
+
+### 거래 단건 조회
+
+```
+GET /transactions/{transactionId}
+```
+
+거래 ID로 거래 단건의 상세 정보를 조회한다.
+
+**Path Variable**
+
+| 파라미터 | 설명 |
+|----------|------|
+| transactionId | 조회할 거래 ID (1 이상) |
+
+**Response** `200 OK`
+
+```json
+{
+  "success": true,
+  "data": {
+    "transactionId": 101,
+    "type": "DEPOSIT",
+    "status": "COMPLETED",
+    "amount": 10000.0000,
+    "completedAt": "2024-01-15T10:30:00Z"
+  },
+  "error": null,
+  "timestamp": "2024-01-15T10:35:00Z"
+}
+```
+
+> `completedAt`은 거래가 PENDING 상태인 경우 `null`로 반환된다.
+
+**오류 케이스**
+
+| HTTP | 코드 | 원인 |
+|------|------|------|
+| 404 | `TRANSACTION_NOT_FOUND` | 존재하지 않는 거래 |
 
 ---
 
