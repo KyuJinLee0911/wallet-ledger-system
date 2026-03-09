@@ -5,8 +5,10 @@ import com.example.walletledger.controller.dto.request.TransferRequest;
 import com.example.walletledger.controller.dto.request.WalletCreateRequest;
 import com.example.walletledger.controller.dto.request.WithdrawRequest;
 import com.example.walletledger.controller.dto.response.ApiResponse;
+import com.example.walletledger.controller.dto.response.LedgerEntryResponse;
 import com.example.walletledger.controller.dto.response.TransactionResponse;
 import com.example.walletledger.controller.dto.response.WalletCreateResponse;
+import com.example.walletledger.controller.dto.response.WalletDetailResponse;
 import com.example.walletledger.domain.transaction.WalletTransaction;
 import com.example.walletledger.service.WalletLedgerService;
 import com.example.walletledger.service.dto.CreateWalletCommand;
@@ -56,6 +58,34 @@ public class WalletCommandController {
                 walletLedgerService.createWallet(new CreateWalletCommand(request.memberId(), request.currency()))
             )
         ));
+    }
+
+    /**
+     * 지갑 단건 상세 정보를 조회한다.
+     *
+     * 컨트롤러는 경로 변수 검증과 응답 매핑만 처리하고 조회 로직은 서비스에 위임한다.
+     */
+    @GetMapping("/wallets/{id}")
+    public ApiResponse<WalletDetailResponse> getWallet(
+        @PathVariable("id") @Positive(message = "walletId는 1 이상이어야 합니다.") Long walletId
+    ) {
+        return ApiResponse.success(WalletDetailResponse.from(walletLedgerService.getWallet(walletId)));
+    }
+
+    /**
+     * 지갑 원장 내역 조회를 처리한다.
+     *
+     * 컨트롤러는 파라미터 검증과 응답 매핑만 수행하고 조회 로직은 서비스에 위임한다.
+     */
+    @GetMapping("/wallets/{id}/ledger")
+    public ApiResponse<Page<LedgerEntryResponse>> getLedgerEntries(
+        @PathVariable("id") @Positive(message = "walletId는 1 이상이어야 합니다.") Long walletId,
+        @PageableDefault(size = 20, sort = "createdAt", direction = org.springframework.data.domain.Sort.Direction.DESC)
+        Pageable pageable
+    ) {
+        Page<LedgerEntryResponse> ledgerEntries = walletLedgerService.getLedgerEntries(walletId, pageable)
+            .map(LedgerEntryResponse::from);
+        return ApiResponse.success(ledgerEntries);
     }
 
     /**
@@ -124,5 +154,17 @@ public class WalletCommandController {
         Page<TransactionResponse> transactions = walletLedgerService.getTransactions(pageable)
             .map(TransactionResponse::from);
         return ApiResponse.success(transactions);
+    }
+
+    /**
+     * 거래 단건 상세 조회를 처리한다.
+     *
+     * 컨트롤러는 경로 변수 검증과 응답 매핑만 수행하고 조회 로직은 서비스에 위임한다.
+     */
+    @GetMapping("/transactions/{transactionId}")
+    public ApiResponse<TransactionResponse> getTransaction(
+        @PathVariable("transactionId") @Positive(message = "transactionId는 1 이상이어야 합니다.") Long transactionId
+    ) {
+        return ApiResponse.success(TransactionResponse.from(walletLedgerService.getTransaction(transactionId)));
     }
 }

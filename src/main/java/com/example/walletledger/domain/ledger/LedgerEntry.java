@@ -60,5 +60,32 @@ public class LedgerEntry extends BaseEntity {
                                     BigDecimal balanceAfter, String description) {
         return new LedgerEntry(walletId, transactionId, LedgerEntryType.DEBIT, amount, balanceAfter, description);
     }
-}
 
+    public Long getId() {
+        return id;
+    }
+
+    public Long getWalletId() {
+        return walletId;
+    }
+
+    public Long getTransactionId() {
+        return transactionId;
+    }
+
+    public LedgerEntryType getType() {
+        return type;
+    }
+
+    public BigDecimal getAmount() {
+        return amount;
+    }
+
+    public BigDecimal getBalanceAfter() {
+        return balanceAfter;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+}

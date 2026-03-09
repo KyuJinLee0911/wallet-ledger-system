@@ -264,6 +264,11 @@ findReplayableTransaction()
 | PENDING 상태 거래 존재 | `IDEMPOTENCY_KEY_CONFLICT` 예외 (처리 중) |
 | 다른 타입의 완료 거래 존재 | `IDEMPOTENCY_KEY_CONFLICT` 예외 (타입 불일치) |
 
+### REQUIRES_NEW와 PENDING 잔존 트레이드오프
+멱등 키 UNIQUE 충돌 시 현재 트랜잭션/세션 오염을 피하기 위해 시작 거래(PENDING) insert를 REQUIRES_NEW 경계에서 처리한다.
+이 구조에서는 외부 트랜잭션이 이후 단계에서 롤백되더라도 REQUIRES_NEW로 커밋된 PENDING 행이 DB에 남을 수 있다.
+하지만 재시도(replay) 판단은 COMPLETED 상태만 대상으로 하므로, PENDING 잔존은 중복 성공 응답을 만들지 않으며 정합성을 깨지 않는다.
+운영 환경에서는 오래된 PENDING 정리 배치, 상태 기준 TTL 정책, 모니터링 알림으로 잔존 레코드를 관리할 수 있다.
 ---
 
 ## 6. 원장 설계
@@ -362,7 +367,78 @@ public enum ErrorCode {
 
 ---
 
-## 8. 테스트 전략
+## 8. MVP 알려진 한계
+
+### 트랜잭션 조회 스코프 미완성
+
+#### 현재 상태
+
+`WalletTransaction` 엔티티와 `transactions` 테이블에 `wallet_id` 컬럼이 없다.
+
+```
+transactions
+────────────────────────
+id
+idempotency_key (UNIQUE)
+type
+status
+amount
+requested_at
+completed_at
+```
+
+`GET /transactions` API는 `findAll(pageable)`로 전체 거래를 반환하며, 특정 지갑의 거래 내역을 직접 조회할 수 없다.
+
+#### 이 상태로 MVP를 출시한 이유
+
+이 프로젝트의 핵심 검증 목표는 세 가지였다.
+
+1. 비관적 락으로 동시 출금 시 잔액 정합성 보장
+2. 2단 방어(Soft Check + UNIQUE Constraint)로 멱등성 처리
+3. `transactions` / `ledger_entries` 분리로 불변 감사 원장 구현
+
+지갑 기준 거래 조회는 위 세 목표와 직교(orthogonal)하는 기능이다. 스키마를 단순하게 유지해 핵심 설계 결정에 집중하기 위해 MVP 범위에서 제외했다.
+
+잔액 변화 이력은 `ledger_entries.wallet_id`를 통해 지갑별로 조회 가능하므로(`GET /wallets/{walletId}/ledger`), 감사 추적 기능 자체에는 공백이 없다.
+
+#### 개선 방향
+
+**스키마 변경**
+
+```sql
+-- transactions 테이블에 wallet_id 추가
+ALTER TABLE transactions ADD COLUMN wallet_id BIGINT REFERENCES wallets(id);
+
+-- 이체는 두 지갑을 참조하므로 별도 컬럼 분리
+ALTER TABLE transactions ADD COLUMN from_wallet_id BIGINT REFERENCES wallets(id);
+ALTER TABLE transactions ADD COLUMN to_wallet_id   BIGINT REFERENCES wallets(id);
+```
+
+단순 입출금은 `wallet_id`로, 이체는 `from_wallet_id` / `to_wallet_id`로 참조하고 `wallet_id`는 NULL로 두는 방식이 적절하다. 또는 거래 타입별로 테이블을 분리하는 방향도 고려할 수 있다.
+
+**쿼리 변경**
+
+```java
+// TransactionRepository
+Page<WalletTransaction> findByWalletId(Long walletId, Pageable pageable);
+
+// 이체의 경우 — 해당 지갑이 송신 또는 수신 측인 거래 모두 포함
+@Query("SELECT t FROM WalletTransaction t " +
+       "WHERE t.fromWalletId = :walletId OR t.toWalletId = :walletId")
+Page<WalletTransaction> findByParticipatingWallet(Long walletId, Pageable pageable);
+```
+
+**API 변경**
+
+현재 `GET /transactions` (전체 조회) 대신, 지갑 컨텍스트를 필수로 요구하는 엔드포인트로 전환한다.
+
+```
+GET /wallets/{walletId}/transactions?page=0&size=20
+```
+
+---
+
+## 9. 테스트 전략
 
 ### 테스트 환경
 

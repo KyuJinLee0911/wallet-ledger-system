@@ -57,6 +57,10 @@ public class WalletTransaction extends BaseEntity {
     }
 
     public void complete() {
+        // 이미 완료된 거래는 재완료 시각을 덮어쓰지 않도록 변경을 무시한다.
+        if (this.status == TransactionStatus.COMPLETED) {
+            return;
+        }
         this.status = TransactionStatus.COMPLETED;
         this.completedAt = Instant.now();
     }

@@ -222,6 +222,6 @@ Docker가 실행 중이어야 통합 테스트가 동작합니다.
 | 락 전략 | 비관적 락 | 분산 환경: Redis 기반 분산 락 |
 | 멱등성 저장소 | DB UNIQUE 제약 | Redis 캐시 레이어로 DB 부하 감소 |
 | 인증/인가 | 없음 | Spring Security + JWT |
-| 거래 조회 | 전체 조회 | 지갑별 필터링, 기간 범위 조회 |
+| 거래 조회 | 전체 조회 (wallet_id 미저장, MVP 한계) | `transactions`에 wallet_id 추가 후 `/wallets/{id}/transactions` 엔드포인트로 전환 — [상세](docs/architecture.md#mvp-알려진-한계) |
 | 통화 | KRW 단일 | 다중 통화 + 환율 적용 |
 | 모니터링 | 없음 | Actuator + Micrometer |

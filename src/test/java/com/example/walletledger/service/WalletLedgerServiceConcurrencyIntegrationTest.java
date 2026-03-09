@@ -11,6 +11,7 @@ import com.example.walletledger.repository.TransactionRepository;
 import com.example.walletledger.repository.WalletRepository;
 import com.example.walletledger.service.dto.CreateWalletCommand;
 import com.example.walletledger.service.dto.MoneyCommand;
+import com.example.walletledger.service.dto.TransferCommand;
 import jakarta.persistence.EntityManager;
 import java.math.BigDecimal;
 import java.util.Queue;
@@ -146,5 +147,88 @@ class WalletLedgerServiceConcurrencyIntegrationTest {
         // DB 관점에서도 성공 건수와 거래/원장 기록 건수가 정확히 일치해야 한다.
         assertThat(completedTxCount).isEqualTo(successCount.get() + 1L); // 초기 충전(DEPOSIT) 1건 포함
         assertThat(debitLedgerCount).isEqualTo(successCount.get());
+    }
+
+    @Test
+    void 역방향_동시_이체에서도_데드락이_발생하지_않고_결과가_일관적이다() throws Exception {
+        // 문서 시나리오 2: 지갑 A->B, B->A를 같은 시점에 요청해 데드락이 없는지 검증한다.
+        Member member = memberRepository.save(new Member("member_conc_transfer_001", "member_conc_transfer_001@test.local"));
+        Long wallet1Id = walletLedgerService.createWallet(new CreateWalletCommand(member.getId(), "KRW")).getId();
+        Long wallet2Id = walletLedgerService.createWallet(new CreateWalletCommand(member.getId(), "KRW")).getId();
+
+        walletLedgerService.deposit(new MoneyCommand(wallet1Id, BigDecimal.valueOf(10_000), "초기 충전 A", "init-a-" + UUID.randomUUID()));
+        walletLedgerService.deposit(new MoneyCommand(wallet2Id, BigDecimal.valueOf(10_000), "초기 충전 B", "init-b-" + UUID.randomUUID()));
+
+        ExecutorService executorService = Executors.newFixedThreadPool(2);
+        CyclicBarrier barrier = new CyclicBarrier(2);
+        CountDownLatch latch = new CountDownLatch(2);
+        AtomicInteger successCount = new AtomicInteger();
+        Queue<Exception> unexpectedErrors = new ConcurrentLinkedQueue<>();
+
+        executorService.submit(() -> {
+            try {
+                barrier.await(10, TimeUnit.SECONDS);
+                walletLedgerService.transfer(
+                    new TransferCommand(
+                        wallet1Id,
+                        wallet2Id,
+                        BigDecimal.valueOf(3_000),
+                        "A to B",
+                        "transfer-a-to-b-" + UUID.randomUUID()
+                    )
+                );
+                successCount.incrementAndGet();
+            } catch (Exception ex) {
+                unexpectedErrors.add(ex);
+            } finally {
+                latch.countDown();
+            }
+        });
+
+        executorService.submit(() -> {
+            try {
+                barrier.await(10, TimeUnit.SECONDS);
+                walletLedgerService.transfer(
+                    new TransferCommand(
+                        wallet2Id,
+                        wallet1Id,
+                        BigDecimal.valueOf(2_000),
+                        "B to A",
+                        "transfer-b-to-a-" + UUID.randomUUID()
+                    )
+                );
+                successCount.incrementAndGet();
+            } catch (Exception ex) {
+                unexpectedErrors.add(ex);
+            } finally {
+                latch.countDown();
+            }
+        });
+
+        boolean finished = latch.await(30, TimeUnit.SECONDS);
+        executorService.shutdownNow();
+
+        // 데드락이 없다면 지정시간 내 스레드가 종료되어야 한다.
+        assertThat(finished).isTrue();
+        assertThat(unexpectedErrors).isEmpty();
+        assertThat(successCount.get()).isEqualTo(2);
+
+        BigDecimal wallet1Balance = walletRepository.findById(wallet1Id).orElseThrow().getBalance();
+        BigDecimal wallet2Balance = walletRepository.findById(wallet2Id).orElseThrow().getBalance();
+
+        // A: 10,000 - 3,000 + 2,000 = 9,000 / B: 10,000 - 2,000 + 3,000 = 11,000
+        assertThat(wallet1Balance.compareTo(BigDecimal.valueOf(9_000))).isZero();
+        assertThat(wallet2Balance.compareTo(BigDecimal.valueOf(11_000))).isZero();
+
+        Long completedTransferTxCount = ((Number) entityManager.createNativeQuery(
+                "SELECT COUNT(*) FROM transactions WHERE type = 'TRANSFER' AND status = 'COMPLETED'")
+            .getSingleResult()).longValue();
+        Long transferLedgerCount = ((Number) entityManager.createNativeQuery(
+                "SELECT COUNT(le.id) FROM ledger_entries le JOIN transactions t ON le.transaction_id = t.id WHERE t.type = 'TRANSFER'")
+            .getSingleResult()).longValue();
+
+        // 이체 2건은 각각 출금/입금 원장 2개씩 기록되므로 총 4개가 기록된다.
+        assertThat(completedTransferTxCount).isEqualTo(2L);
+        assertThat(transferLedgerCount).isEqualTo(4L);
     }
 }

@@ -1,5 +1,6 @@
 package com.example.walletledger.service;
 
+import com.example.walletledger.domain.ledger.LedgerEntry;
 import com.example.walletledger.domain.transaction.WalletTransaction;
 import com.example.walletledger.domain.wallet.Wallet;
 import com.example.walletledger.service.dto.CreateWalletCommand;
@@ -22,6 +23,27 @@ public interface WalletLedgerService {
      * 회원 존재 여부를 검증한 뒤 초기 잔액 0으로 지갑을 저장한다.
      */
     Wallet createWallet(CreateWalletCommand command);
+
+    /**
+     * 지갑 ID로 지갑 상세 정보를 조회한다.
+     *
+     * 조회 전용 유스케이스로 변경 없이 현재 지갑 상태를 반환한다.
+     */
+    Wallet getWallet(Long walletId);
+
+    /**
+     * 거래 ID로 단건 거래 상세 정보를 조회한다.
+     *
+     * 조회 전용 유스케이스로 단일 거래를 반환한다.
+     */
+    WalletTransaction getTransaction(Long transactionId);
+
+    /**
+     * 지갑 ID 기준으로 원장 내역을 페이지 단위로 조회한다.
+     *
+     * 지갑 범위 내에서 원장 데이터를 조회해 응답한다.
+     */
+    Page<LedgerEntry> getLedgerEntries(Long walletId, Pageable pageable);
 
     /**
      * 지갑에 금액을 입금한다.
